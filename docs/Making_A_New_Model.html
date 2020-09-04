@@ -1,0 +1,426 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote {
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: "Helvetica Neue", Helvetica, "Hiragino Sans GB", Arial, sans-serif;
+    font-size: 13px;
+    line-height: 18px;
+    color: #737373;
+    margin: 10px 10px 10px 20px;
+}
+a {
+    color: #0069d6;
+}
+a:hover {
+    color: #0050a3;
+    text-decoration: none;
+}
+a img {
+    border: none;
+}
+p {
+    margin-bottom: 9px;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: #404040;
+    line-height: 36px;
+}
+h1 {
+    margin-bottom: 18px;
+    font-size: 30px;
+}
+h2 {
+    font-size: 24px;
+}
+h3 {
+    font-size: 18px;
+}
+h4 {
+    font-size: 16px;
+}
+h5 {
+    font-size: 14px;
+}
+h6 {
+    font-size: 13px;
+}
+hr {
+    margin: 0 0 19px;
+    border: 0;
+    border-bottom: 1px solid #aaa;
+}
+blockquote {
+    padding: 13px 13px 21px 15px;
+    margin-bottom: 18px;
+    font-family:georgia,serif;
+    font-style: italic;
+}
+blockquote:before {
+    content:"\201C";
+    font-size:40px;
+    margin-left:-10px;
+    font-family:georgia,serif;
+    color:#eee;
+}
+blockquote p {
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 18px;
+    margin-bottom: 0;
+    font-style: italic;
+}
+code, pre {
+    padding: 0 3px 2px;
+    font-family: Monaco, Andale Mono, Courier New, monospace;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+}
+code {
+    background-color: #fee9cc;
+    color: rgba(0, 0, 0, 0.75);
+    padding: 1px 3px;
+    font-size: 12px;
+}
+pre {
+    display: block;
+    padding: 14px;
+    margin: 0 0 18px;
+    line-height: 16px;
+    font-size: 11px;
+    border: 1px dashed #ccc;
+    border: 1px dashed rgba(0, 0, 0, 0.15);
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    white-space: pre;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+pre code {
+    background-color: #fdfdfd;
+    color:#737373;
+    font-size: 11px;
+}
+@media screen and (min-width: 768px) {
+    body {
+        width: 748px;
+        margin:10px auto;
+    }
+}
+</style>
+<title>Making a new model for TAPIR</title>
+</head>
+<body>
+<h1>Implementing a New POMDP Model</h1>
+
+<p>At its core, implementation of a specific POMDP problem is done via an
+implementation of the [Model] interface, which represents a black-box generative
+model of a POMDP. See [TagModel] for an example implementation of this interface
+for the Tag POMDP.</p>
+
+<p>Formally, a POMDP can be specified as an 8-tuple, (S, A, O, T, Z, R, b0, γ),
+where</p>
+
+<ul>
+<li>S is a set of states</li>
+<li>A is a set of actions</li>
+<li>O is a set of observations</li>
+<li>T is the transition function, which is a conditional probability distribution
+for the next state given the previous state and action,
+i.e. T(s, a, s') = p(s' | s, a)</li>
+<li>Z is the observation function, which is a conditional probability distrubtion
+for the observation given the action and the resulting state,
+i.e. Z(a, o, s') = p(o | a, s')</li>
+<li>R is the reward function, which returns the expected reward for a given state
+and action,
+i.e. R(s, a)</li>
+<li>b0 is a probability distribution over states, which represents the agent's
+initial knowledege.</li>
+<li>γ is the discount factor for the POMDP</li>
+</ul>
+
+<p>Since this is a black box model, many of these elements are defined implicitly
+rather than explicitly. The key requirements to specify a POMDP model are:</p>
+
+<ul>
+<li>[Model::sampleAnInitState] should sample an initial state from the
+initial belief, and hence implicitly defines b0</li>
+<li>[Model::generateStep] offers a simple generative model of the POMDP;
+it takes a single state and action, and returns an observation, next state,
+and a sampled reward value r, i.e. (s, a) => (o, r, s').
+This forms an implicit definition of the transition, observation and reward
+functions, T, Z, and R</li>
+<li>[Options::discountFactor] defines the POMDP discount factor, γ - each
+[Model] will posses a unique instance of the [Options] class (or a subclass,
+such as [TagOptions]).</li>
+<li>[Model::isTerminal] specifies which states will be considered terminal - the
+method should return true for those states, and false for others.</li>
+</ul>
+
+<p>As for S, A, and O, the states, actions, and observations should implement
+their respective abstract classes [State], [Action], and [Observation]. That
+said, it is important to note that the sets of states and observations are
+actually implicitly defined via the black-box sampling methods -
+[Model::sampleAnInitState] should return a state within S, and
+[Model::generateStep] should return states and observations that are within
+S and O respectively. However, since the solver itself needs to select actions,
+actions require more explicit treatment by the ABT algorithm. This is
+done via the [ActionPool] interface and the method [Model::createActionPool];
+see the <a href="#actionpool">section below</a> for some additional details.</p>
+
+<p>See below for a more detailed description of the core functionality needed
+in order to make a new problem for TAPIR.</p>
+
+<h2>Model</h2>
+
+<p>As previously mentioned, the [Model] class is the core interface for the
+specification of a POMDP model; see [TagModel] for a concrete example.
+An implementation of [Model] must, at the very least, implement all of the pure
+virtual methods in the abstract base class. These include the aforementioned
+core methods [Model::sampleAnInitState], [Model::generateStep], and
+[Model::isTerminal], as specified previously. A [Model] instance will also
+possess an [Options] instance, which specifies various ABT and POMDP parameters.</p>
+
+<p>In addition to the these three core methods, and
+<a href="../src/solver/abstract-problem/Model.hpp#L311">Model::createActionPool</a> (see
+<a href="#actionpool">this section</a> for further details), a Model must also implement
+[Model::sampleStateUninformed], which should generate states according to an
+uninformed prior (as opposed to from the initial belief);
+this is used by the default implementation for the
+<a href="../src/solver/abstract-problem/Model.hpp#L234">uninformed generateParticles</a> method.
+Custom implementations for the two particle filtering methods 
+(<a href="../src/solver/abstract-problem/Model.hpp#L221">informed</a> and 
+<a href="../src/solver/abstract-problem/Model.hpp#L234">uninformed</a>) can be written if better handling of particle depletion is needed. Also of
+key importance (although not mandatory) is a heuristic function, which is
+specified by [Model::getHeuristicFunction] - this uses a functional programming
+interface, and should return a [HeuristicFunction].
+By default, the heuristic function is simply one that always returns zero.</p>
+
+<p>If you wish the model to handle changes, see
+<a href="#implementing-changes">the section on changes</a>
+below; in short, doing so requires implementations for several other methods,
+most notably [Model::applyChanges].</p>
+
+<p>A convenient subclass of [Model] is [ModelWithProgramOptions], which uses
+additional options from [SharedOptions] to provide some extra configuration
+settings, including text-based parsing in order to select different search
+strategies.</p>
+
+<h2>Options</h2>
+
+<p>Each [Model] instance should possess an [Options] instance, which specifies
+the various configuration settings to use for that problem, and for TAPIR to
+use when solving that problem. The base [Options] class has several parameters
+for ABT settings, but with respect to specifying a POMDP there are two crucial
+values that must be specified:
+- [Options::discountFactor] - the POMDP discount factor.
+- [Options::numberOfStateVariables] - the number of state variables used to
+    define a state of the POMDP.</p>
+
+<h2>State</h2>
+
+<p>Represents a state within the state space of the problem.
+See [TagState] for an example.</p>
+
+<p>The core implementation requires only the following methods:
+- [copy()] --- duplicates the state
+- [hash()] --- hashes the state for storage in an std::unordered_map
+- [equals()] --- identifies equivalent states; used in conjunction with [hash()]</p>
+
+<p>Also useful (though not required) are:
+- [distanceTo()] --- defines a distance metric over the states;
+    the default is an infinite distance between any pair of states.
+- [print()] --- generates a human-readable text representation
+    of the state.</p>
+
+<p>In order to be able to make changes to the policy when changes to the model
+occur, states also need to be stored within a [StateIndex]. The default
+implementation for this is an R*-tree, which is implemented via a
+<a href="../src/solver/indexing/RTree.hpp">thin wrapper</a> around the
+<a href="http://libspatialindex.github.io/overview.html#the-rtree-package">R*-tree implementation</a>
+from
+<a href="http://libspatialindex.github.io">libspatialindex</a>.
+In order to use this implementation, the [State] needs to implement
+[VectorState]. In addition to the standard [State] methods, this also requires
+the additional method <a href="../src/solver/abstract-problem/Vector.hpp#L39">asVector()</a>, which must return an
+std::vector<double> representation of the state; this vector will then be stored
+inside the <a href="../src/solver/indexing/RTree.hpp">R*-tree</a>.</p>
+
+<p>Alternatively, a custom [StateIndex] implementation can be given by
+implementing [StateIndex] and having [Model::createStateIndex] return an
+instance of that custom implementation.</p>
+
+<h2>Observation</h2>
+
+<p>Represents an observation within the action space of the problem.
+See [TagObservation] for an example.
+Like [State], the [Observation] interface requires implementations for
+[copy()], [equals()], and [hash()],
+and custom implementations can be given for [distanceTo()] and [print()]</p>
+
+<h2>Action</h2>
+
+<p>Represents an action within the action space of the problem.
+See [TagAction] for an example.
+Like [State], the [Action] interface requires implementations for
+[copy()], [equals()], and [hash()],
+and custom implementations can be given for [distanceTo()] and [print()]</p>
+
+<h2>ActionPool</h2>
+
+<p>In order for the ABT solver to be able to search the space of possible actions,
+it needs a way to know which actions it will need to try, and at which belief
+nodes. This is handled in a generic manner by the [ActionPool] interface - the
+[ActionPool] essentially works as a factory to generate individual instances of
+[ActionMapping] for each belief node. When ABT is searching using the standard
+[UCB search strategy], it queries the [ActionMapping] using
+[ActionMapping::getNextActionToTry]; this essentially defines the initialization
+phase of he UCB algorithm - as long as this method returns actions
+(rather than nullptr), these actions will continue to be tried; moreover, it is
+only those actions that have been tried before that will actually be selected
+once the actual UCB algorithm is being used.</p>
+
+<p>A standard implementation of [ActionPool] that should be sufficient for most
+purposes is provided as [EnumeratedActionPool]. This implementation assumes
+that there is a finite, and relatively small, enumerated set of global actions
+that can be taken from any state in the problem. Use of this implementation
+has two prerequsites:
+- The [Action] class used must implement the [DiscretizedPoint] interface,
+    which requires that every action be able to return its associated
+    index in the enumeration via the method [DiscretizedPoint::getBinNumber]
+- The [EnumeratedActionPool] constructor requires, as a constructor argument,
+    a vector containing all of the actions, in the order of their enumeration.</p>
+
+<h2>Working with continuous actions</h2>
+
+<p>For continuous action spaces, the solver needs to be able to create new actions 
+based on numerical vector data. Thus, a few extra concepts need to be 
+implemented. The vector data is represented by a construction data class derived 
+from [ContinuousActionConstructionDataBase]. The construction data also contains 
+facilities to influence hashing (for insertion into hash tables) and equality 
+comparisons.</p>
+
+<p>The action itself must be derived from [ContinuousAction] and override the 
+abstract functions to create an action from given construction data and vice 
+versa. It has proven convenient (but it is not required) to use the construction 
+data class as storage within the action class. That is, the only data member of 
+the action class is the construction data.</p>
+
+<p>The action pool has to be derived from [ContinuousActionPool]. The action pool 
+is the means of accessing problem specific features needed for GPS-ABT. It 
+returns the bounding box used for the general pattern search and also returns 
+information about fixed actions that should be considered in case the action 
+space is a hybrid space (i.e. it has both, continuous and discrete actions). 
+The continuous action pool also contains a couple of technical methods to create 
+actions from construction data and to create an action container. The most 
+convenient way to create an action container is to return an instantiation of 
+the [ContinuousActionContainer] template. 
+For an example about implementing continuous actions, it is recommended to look 
+at the implementation of the [PushBoxActionPool].</p>
+
+<h2>Serializer</h2>
+
+<p>If you require the ability to serialize a solver policy (e.g. to save it to
+a file), you must provide an implementation of the abstract [Serializer]
+class. A basic implementation that generates human-readable text representations
+of all of the core ABT solver classes is provided by [TextSerializer], but
+this implementation is only partial, because it doesn't come with
+implementations for the various configurable data structures. As such,
+in order to fully implement a [Serializer] for your problem, you will also need
+to implement methods to serialize a few of the core interface classes - that is,
+[State], [Action], and [Observation].
+Additionally, the action and observation mappings also need serialization. The
+default observation mapping is [DiscreteObservationPool], which should suffice
+for most purposes; in order to serialize this mapping class, the serializer
+implementation should also inherit from [DiscreteObservationTextSerializer].
+Similarly, if you use [EnumeratedActionPool] for mapping actions, your
+serializer should inherit from [EnumeratedActionTextSerializer],
+and if continuous actions are used the serializer should inherit from 
+[ContinuousActionTextSerializer].</p>
+
+<p>To see a good example of the above, have a look at [TagTextSerializer].</p>
+
+<hr />
+
+<h2>Implementing Changes</h2>
+
+<p>It is not mandatory for a [Model] implementation to deal with changes, but
+if you require this functionality, the following two core implementation details
+are the most important:</p>
+
+<ul>
+<li>A custom [ModelChange] class, e.g. [TagChange]. This class doesn't
+have any required methods, because it's up to each individual
+[Model] implementation to determine how it deals with changes.
+Note that if you implement [ModelChange] you will likely also need to
+implement serialization methods, e.g.
+[TagTextSerializer::saveModelChange] and
+[TagTextSerializer::loadModelChange]</li>
+<li>An implementation of [Model::applyChanges], which performs two key functions:
+<ul>
+<li>Updating the Model's black box generators in response to the changes.</li>
+<li>Informing the Solver of the changes that have been applied. This is done
+via the [StatePool] interface, which can be used in conjunction with a
+custom [StateIndex] implementation, e.g. [RTree], in order to perform more
+intelligent queries. See [TagModel::applyChanges] for an example
+implentation.</li>
+</ul></li>
+</ul>
+
+<p>The [Solver] handles model changes by using a [HistoryCorrector], the default
+implementation of which is [DefaultHistoryCorrector], which should work OK for
+any custom problem. However, in order to use this implementation you must also
+implement these methods of <a href="../src/solver/abstract-problem/Model.hpp">Model</a>:</p>
+
+<ul>
+<li>[Model::generateNextState] to generate states - an implicit definition of T(s, a, s').</li>
+<li>[Model::generateObservation] to generate observations - an implicit definition of Z(a, o, s').</li>
+<li>[Model::generateReward] to generate rewards - an implicit definition of R(s, a).</li>
+</ul>
+
+<p>These three methods are used instead of [Model::generateStep] in order to avoid
+unnecessary recalculation, and to minize the extent to which new histories
+diverge from old ones due to re-randomization. To minimize such issues even
+further, you can use [TransitionParameters] and [Model::generateTransition],
+which allows you to store extra information about a generated step.
+This can be used, for example, to store intermediate calculations,
+or generated random numbers. See the documentation of [Model] for greater detail.</p>
+
+<hr />
+
+<h2>Generating Binaries For a New POMDP Model</h2>
+
+<p>For additional convenience, template methods to generate binaries for an
+individual problem are given in:</p>
+
+<ul>
+<li><a href="../src/problems/shared/solve.hpp">solve.hpp</a> --- initial offline policy generation; see
+<a href="../src/problems/tag/solve.cpp">solve.cpp for Tag</a> for a usage example.</li>
+<li><a href="../src/problems/shared/simulate.hpp">simulate.hpp</a> --- simulation with online POMDP solution; see
+<a href="../src/problems/tag/simulate.cpp">simulate.cpp for Tag</a> for a usage example.</li>
+</ul>
+
+<p>Check the <a href="Overview.html">overview</a> and the
+<a href="../.make/README.html">build system README</a> for further details for configuring
+your new POMDP for use with TAPIR.</p>
+</body>
+</html>

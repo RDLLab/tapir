@@ -1,0 +1,508 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote {
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: "Helvetica Neue", Helvetica, "Hiragino Sans GB", Arial, sans-serif;
+    font-size: 13px;
+    line-height: 18px;
+    color: #737373;
+    margin: 10px 10px 10px 20px;
+}
+a {
+    color: #0069d6;
+}
+a:hover {
+    color: #0050a3;
+    text-decoration: none;
+}
+a img {
+    border: none;
+}
+p {
+    margin-bottom: 9px;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: #404040;
+    line-height: 36px;
+}
+h1 {
+    margin-bottom: 18px;
+    font-size: 30px;
+}
+h2 {
+    font-size: 24px;
+}
+h3 {
+    font-size: 18px;
+}
+h4 {
+    font-size: 16px;
+}
+h5 {
+    font-size: 14px;
+}
+h6 {
+    font-size: 13px;
+}
+hr {
+    margin: 0 0 19px;
+    border: 0;
+    border-bottom: 1px solid #aaa;
+}
+blockquote {
+    padding: 13px 13px 21px 15px;
+    margin-bottom: 18px;
+    font-family:georgia,serif;
+    font-style: italic;
+}
+blockquote:before {
+    content:"\201C";
+    font-size:40px;
+    margin-left:-10px;
+    font-family:georgia,serif;
+    color:#eee;
+}
+blockquote p {
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 18px;
+    margin-bottom: 0;
+    font-style: italic;
+}
+code, pre {
+    padding: 0 3px 2px;
+    font-family: Monaco, Andale Mono, Courier New, monospace;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+}
+code {
+    background-color: #fee9cc;
+    color: rgba(0, 0, 0, 0.75);
+    padding: 1px 3px;
+    font-size: 12px;
+}
+pre {
+    display: block;
+    padding: 14px;
+    margin: 0 0 18px;
+    line-height: 16px;
+    font-size: 11px;
+    border: 1px dashed #ccc;
+    border: 1px dashed rgba(0, 0, 0, 0.15);
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    white-space: pre;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+pre code {
+    background-color: #fdfdfd;
+    color:#737373;
+    font-size: 11px;
+}
+@media screen and (min-width: 768px) {
+    body {
+        width: 748px;
+        margin:10px auto;
+    }
+}
+</style>
+<title>TAPIR Quick Start Guide</title>
+</head>
+<body>
+<h1>Toolkit for approximating and Adapting POMDP solutions In Realtime (TAPIR)</h1>
+
+<p>TAPIR [1] is a C++ implementation of the Adaptive Belief Tree (ABT) algorithm [2].
+ABT is an online POMDP solver capable of adapting to modifications to the POMDP
+model without the need to reconstruct the policy from scratch.
+For continuous action spaces, TAPIR also includes an implementation of General
+Pattern Search in Adaptive Belief Trees (GPS-ABT) [3].</p>
+
+<p>[1] D. Klimenko and J. Song and. H. Kurniawati.
+TAPIR: A Software Toolkit for Approximating and Adapting POMDP Solutions Online.
+<em>Proc. Australasian Conference on Robotics and Automation.</em>
+2014.
+http://robotics.itee.uq.edu.au/~hannakur/dokuwiki/papers/acra14_tapir.pdf</p>
+
+<p>[2] H. Kurniawati and V. Yadav.
+An Online POMDP Solver for Uncertainty Planning in Dynamic Environment.
+<em>Proc. Int. Symp. on Robotics Research.</em>
+2013.
+http://robotics.itee.uq.edu.au/~hannakur/dokuwiki/papers/isrr13_abt.pdf</p>
+
+<p>[3] K. Seiler and H. Kurniawati and S.P.N. Singh.
+An Online and Approximate Solver for POMDPs with Continuous Action Space.
+<em>Proc. IEEE Int. Conference on Robotics and Automation (ICRA).</em>
+2015.
+http://robotics.itee.uq.edu.au/~hannakur/dokuwiki/papers/icra15_ctsActPomdp.pdf</p>
+
+<p>For bug reports and suggestions, please email rdl.algorithm@itee.uq.edu.au</p>
+
+<p>For the latest news, please visit
+<a href="http://robotics.itee.uq.edu.au/~tapir">the TAPIR website</a>.</p>
+
+<hr />
+
+<h2>TAPIR Development Team</h2>
+
+<ul>
+<li>Main developers:
+<ul>
+<li>Dimitri Klimenko (core toolkit)</li>
+<li>Konstantin Seiler (continuous action spaces)</li>
+<li>Joshua Song (ROS + VREP interface)</li>
+</ul>
+
+<hr />
+
+<h2>System Requirements</h2>
+
+<p>Operating systems: Linux.</p>
+
+<p>Building and running the C++ source code requires:</p>
+
+<ul>
+<li><a href="https://gcc.gnu.org">GNU C++ compiler</a> (>= 4.8) or equivalent</li>
+<li><a href="http://libspatialindex.github.io">libspatialindex</a> (>= 1.7.0)
+Debian/Ubuntu package name: "libspatialindex-dev"</li>
+</ul>
+
+<p><strong>Ubuntu 12.04 NOTE:</strong></p>
+
+<p>Ubuntu 12.04 by default ships with g++ 4.6. One option is to replace g++ 4.6
+with g++ 4.8. Otherwise, to have both g++ 4.8 and g++ 4.6:</p>
+
+<pre><code>sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt-get update
+sudo apt-get install g++-4.8
+sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 60
+sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.6 40
+</code></pre>
+
+<p>Here, 4.8 priority is set to 60, higher than 4.6. To swap to 4.6 use:</p>
+
+<pre><code>sudo update-alternatives --config g++
+</code></pre>
+
+<hr />
+
+<h2>Quick Start (Command-line Interface)</h2>
+
+<p>TAPIR with command-line interface has been tested with Ubuntu 12.04 -- 14.04.</p>
+
+<h3>Setup and Installation</h3>
+
+<p>At the top level directory of TAPIR (where this README file is located), run:</p>
+
+<pre><code>make all
+</code></pre>
+
+<p>or, for faster compilation via multi-threading,</p>
+
+<pre><code>make all -jN
+</code></pre>
+
+<p>where N is the number of threads you want to use - 8 is a good choice on many
+CPUs.</p>
+
+<p>This will create the executables for a command-line interface for each of
+the example problems - these are created in <code>problems/[problem-name]</code>,
+and also in <code>src/problems/[problem-name]</code> for convenience while editing the
+source files.</p>
+
+<h3>Running</h3>
+
+<p>After compiling, you can try the following commands to try using TAPIR on
+RockSample, which is a well-known example POMDP:</p>
+
+<pre><code>cd problems/rocksample
+./solve
+./simulate
+</code></pre>
+
+<p>You can also run <code>RockSample[11,11]</code>, a version of RockSample with a larger
+map and much larger state space, by using the command-line setting
+<code>--cfg default-11-11.cfg</code>, i.e.</p>
+
+<pre><code>cd problems/rocksample
+./solve --cfg default-11-11.cfg
+./simulate --cfg default-11-11.cfg
+</code></pre>
+
+<p>The command "solve" uses the parameters set in a problem-specific
+configuration file, which for RockSample is, by default,
+<a href="problems/rocksample/default.cfg">here</a>.
+The purpose of "solve" is to output a policy, which by default will be
+written to the file "pol.pol" in the current working directory.</p>
+
+<p>The command "simulate" uses the same default configuration file, but its
+function is to run online simulations to evaluate the performance of
+the TAPIR solver. It starts by loading an initial policy from the policy
+file (default "pol.pol", as output by "solve"), and runs a step-by step
+simulation of the POMDP. The online solver is run on every step so that
+the policy can be dynamically generated on every step.</p>
+
+<h3>Changing Configuration Files</h3>
+
+<p>To change the configuration settings, edit the default configuration
+files, or copy them and make your own version, e.g.</p>
+
+<pre><code>cd problems/rocksample
+cp default.cfg my_settings.cfg
+</code></pre>
+
+<p>Now you can edit my_settings.cfg to change the settings. To use
+with a different configuration file, use the command-line argument
+--cfg, e.g.</p>
+
+<pre><code>cd problems/rocksample
+./solve --cfg my_settings.cfg
+</code></pre>
+
+<p>Note that "solve" is still searching for configuration settings in
+the directory "problems/rocksample" - you can change this by using the argument
+<code>--base-path &lt;path&gt;</code>.</p>
+
+<h3>Other Options</h3>
+
+<p>Some of the core settings can also be set via command-line arguments. Any
+command-line options given will override the values specified in the
+configuration file. For details, run</p>
+
+<pre><code>./solve --help
+</code></pre>
+
+<p>or</p>
+
+<pre><code>./simulate --help
+</code></pre>
+
+<p>to see the command-line options for either executable.</p>
+
+<hr />
+
+<h2>Quick Start (ROS and V-REP Interface)</h2>
+
+<p>TAPIR provides an interface with ROS and V-REP, tested on:</p>
+
+<ul>
+<li>Ubuntu 12.04 with ROS Hydro + V-REP PRO EDU V3.1.2.</li>
+<li>Ubuntu 14.04 with ROS Indigo + V-REP PRO EDU V3.1.2.</li>
+<li>Ubuntu 16.04 with ROS Kinetic + V-REP PRO EDU V3.3.2.</li>
+</ul>
+
+<h3>Additional system requirements</h3>
+
+<h4>ROS</h4>
+
+<p>Go <a href="http://wiki.ros.org/hydro/Installation/Ubuntu">here</a> for instructions on
+how to install ROS. Some possible issues and ways around them are:</p>
+
+<ul>
+<li><p><strong>Ubuntu 12.04</strong>: ROS Hydro defaults to using Boost 1.46 instead of Boost 1.48, and the Boost
+1.48 headers are incompatible with C++11 (as used by TAPIR).
+To resolve this issue, you will need to install Boost 1.48 from source.
+The easiest way to set up Boost 1.48 for use with ROS and TAPIR is,
+at the top level directory of TAPIR, to do the following:</p>
+
+<ol>
+<li>Set <code>CUSTOM_BOOST_148_DIR</code> in the root Makefile to the location
+of your Boost 1.48 installation, or, if you haven't installed it yet,
+the desired directory for it (e.g. <code>~/vrep</code>)</li>
+<li>Run the command <code>make boost</code></li>
+</ol>
+
+<p>The command <code>make boost</code> will find if a Boost installation is in
+<code>CUSTOM_BOOST_148_DIR</code>. If it doesn't find a Boost installation,
+it will automatically download Boost and install it to the directory you've
+specified at <code>CUSTOM_BOOST_148_DIR</code>.
+It will also patch a bug in the Boost headers that causes problems
+with GCC >= 4.7.0. These functions are performed by several scripts in the
+<code>.ros-scripts</code> directory.</p>
+
+<p>If you wish to compile Boost 1.48 manually with GCC >= 4.7.0, you should use
+the patch provided <a href="https://svn.boost.org/trac/boost/ticket/6165">here</a>.</p></li>
+<li><p><strong>Ubuntu 14.04</strong>:
+On Ubuntu 14.04 you must instead use ROS Indigo,
+which is available via the package "ros-indigo-desktop-full"</p></li>
+</ul>
+
+<h4>V-REP</h4>
+
+<p>Go <a href="http://www.coppeliarobotics.com/downloads.html">here</a>, download V-REP, and
+extract it to the directory of your choice. TAPIR has been tested with
+V-REP PRO EDU V3.1.2.</p>
+
+<ul>
+<li><strong>Ubuntu 14.04</strong>:
+On Ubuntu 14.04 the version of the ROS plugin that ships with V-REP will not
+work out of the box - it causes a segmentation fault in V-REP! You will
+need to recompile the plugin.</li>
+</ul>
+
+<h4>V-REP ROS plugin</h4>
+
+<p>V-REP comes with a plugin for ROS, but the default version of this plugin may
+not work properly for you - in particular, the current distribution of V-REP
+is not designed for ROS Indigo, and so if you're on Ubuntu 14.04 you will need
+to rebuild it.</p>
+
+<p>TAPIR comes with a script to automatically recompile the V-REP plugin for you,
+which can be run using the command </p>
+
+<pre><code>make vrep_plugin
+</code></pre>
+
+<p>Note that this requires you to set the <code>VREP_DIR</code> and <code>ROS_SCRIPT</code> variables
+in the root Makefile before it will work properly.
+The script should automatically rebuild the plugin and copy it to <code>VREP_DIR</code>.</p>
+
+<p>If you instead wish to manually rebuild the plugin, follow the tutorial
+<a href="http://www.coppeliarobotics.com/helpFiles/en/rosTutorialHydro.htm">here</a>.
+To do this on Ubuntu 14.04, you will also need to change line 14 of <br />
+<code>VREP_DIR/programming/ros_packages/vrep_plugin/CMakeLists.txt</code>
+to <br />
+<code>link_directories("/opt/ros/indigo/lib")</code> <br />
+instead of <br />
+<code>link_directories("/opt/ros/hydro/lib")</code> <br />
+Please note that the V-REP plugin also requires the ROS joystick packages
+in order to compile - for ROS Indigo those packages should be available
+via the Ubuntu/Debian package <code>ros-indigo-joy</code>.</p>
+
+<h3>Setup and installation (for use with ROS and V-REP)</h3>
+
+<p>This package is designed to be used with the ROS Catkin build system, and as
+such must be compiled within a Catkin workspace. To do this, start at the top
+level directory of TAPIR (where this README file is located) and do the following:</p>
+
+<ol>
+<li>Set the following variables in the root Makefile :
+<ul>
+<li><code>CUSTOM_BOOST_148_DIR</code> - A custom path to Boost 1.48; leave this empty
+if you just want to use your system default version of Boost.</li>
+<li><code>ROS_SCRIPT</code> - path to the main ROS setup script; the default is
+<code>/opt/ros/hydro/setup.sh</code></li>
+<li><code>CATKIN_WS_DIR</code> - path to the desired Catkin workspace directory;
+the default is <code>../catkin_ws</code> (relative to the root tapir directory,
+i.e. the location of this README)</li>
+<li><code>VREP_DIR</code> - path to where you have extracted V-REP;
+the default is <code>../vrep</code></li>
+</ul></li>
+<li>Run the command <code>make ros</code></li>
+</ol>
+
+<p>The command <code>make ros</code> can automatically set up a workspace for you and
+will add a symbolic link to the source directory into the workspace.</p>
+
+<h3>Running (with ROS and V-REP)</h3>
+
+<p>If you compiled with <code>make ros</code>, TAPIR will automatically create a script
+to run the Tag example problem together with the ROS and V-REP interface. To run
+Tag with ROS+VREP, go to the top level directory of TAPIR
+(where this README file is located), and run the following commands:</p>
+
+<pre><code>cd problems/tag
+./simulate-ros
+</code></pre>
+
+<p>The script <code>simulate-ros</code> will automatically run a <em>roscore</em>, and then launch
+V-REP (if it is not already running).
+Note that the roscore must already be running when you start V-REP,
+or the ROS plugin will fail to load; it is also important to read the console
+messages when V-REP is staring up in order to make sure that the ROS plugin
+loads correctly.
+If there is an issue with loading the ROS plugin, you may need to recompile
+it - follow the instructions in the
+<a href="#v-rep-ros-plugin">previous section on the V-REP plugin</a>.</p>
+
+<p>If you run a roscore and launch V-REP manually, and have sourced the setup
+script for your Catkin workspace, i.e.</p>
+
+<pre><code>source [path/to/catkin/workspace]/devel/setup.bash
+</code></pre>
+
+<p>you can simply run</p>
+
+<pre><code>roslaunch tapir tag.launch
+</code></pre>
+
+<p>in order to start the Tag problem.</p>
+
+<p>After a couple of seconds, the simulation should start automatically; it can
+also be paused at any time via the V-REP interface. During the simulation you
+can also actively manipulate the environment using the mouse to left-click on
+squares in the Tag grid:</p>
+
+<ul>
+<li>To remove an obstacle, left-click on a cell and wait momentarily.</li>
+<li>To add an obstacle, left-click on a cell and wait momentarily.</li>
+<li>You can also add or remove multiple cells at the same time by holding down
+the CTRL key while clicking on those cells.</li>
+</ul>
+
+<h3>Interface details</h3>
+
+<p>Additional detail on how to interface with ROS and V-REP when implementing
+your own POMDP problems is provided in in the
+<a href="docs/ROS_VREP_Guide.html">ROS/V-REP Guide</a>.</p>
+
+<hr />
+
+<h2>Implementing a new POMDP model</h2>
+
+<p>To create a new POMDP model and use it with the the command-line interface,</p>
+
+<ol>
+<li>Read the <a href="docs/Making_A_New_Model.html">README on implementing a new model</a></li>
+<li>Create a new subdirectory for your POMDP in
+<a href="src/problems">the problems directory</a></li>
+<li>Implement all the required classes, as per
+<a href="docs/Making_A_New_Model.html">the new model README</a></li>
+<li>Add a new Makefile to your problem directory - just copy
+<a href="src/problems/tag/Makefile">the Tag Makefile</a> and change MODULE_NAME to match
+your new problem.</li>
+<li>Add your problem to the CHILD_DIRS variable in the
+<a href="src/problems/Makefile">problems Makefile</a></li>
+<li>Create a new subdirectory in <a href="problems">the config directory</a> for your
+problem, and add any required configuration files there.</li>
+<li><p>Compile your code via <code>make [problem-name]</code>, or simply by running
+"make" from your new subdirectory of src/problems, e.g.</p>
+
+<pre><code>cd src/problems/tag
+make
+</code></pre></li>
+</ol>
+
+<hr />
+
+<h2>Acknowledgements</h2>
+
+<p>The development of this package is partially funded by the
+University of Queensland BEE Division Grant 2013 and the
+BME Early Career Researcher 2014 to Hanna Kurniawati.</p>
+
+<hr />
+
+<h2>Release Notes</h2>
+</body>
+</html>
