@@ -11,19 +11,19 @@ Pattern Search in Adaptive Belief Trees (GPS-ABT) \[3\].
 TAPIR: A Software Toolkit for Approximating and Adapting POMDP Solutions Online.
 _Proc. Australasian Conference on Robotics and Automation._
 2014.
-http://rdl.cecs.anu.edu.au/papers/acra14_tapir.pdf
+[pdf](http://rdl.cecs.anu.edu.au/papers/acra14_tapir.pdf)
 
 \[2\] H. Kurniawati and V. Yadav.
 An Online POMDP Solver for Uncertainty Planning in Dynamic Environment.
 _Proc. Int. Symp. on Robotics Research._
 2013.
-http://rdl.cecs.anu.edu.au/papers/isrr13_abt.pdf
+[pdf](http://rdl.cecs.anu.edu.au/papers/isrr13_abt.pdf)
 
 \[3\] K. Seiler and H. Kurniawati and S.P.N. Singh.
 An Online and Approximate Solver for POMDPs with Continuous Action Space.
 _Proc. IEEE Int. Conference on Robotics and Automation (ICRA)._
 2015.
-http://rdl.cecs.anu.edu.au/papers/icra15_ctsActPomdp.pdf
+[pdf](http://rdl.cecs.anu.edu.au/papers/icra15_ctsActPomdp.pdf)
 
 <!--- For bug reports and suggestions, please email rdl.algorithm@itee.uq.edu.au --->
 
