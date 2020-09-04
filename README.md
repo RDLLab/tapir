@@ -25,7 +25,7 @@ _Proc. IEEE Int. Conference on Robotics and Automation (ICRA)._
 2015.
 http://rdl.cecs.anu.edu.au/papers/icra15_ctsActPomdp.pdf
 
-For bug reports and suggestions, please email rdl.algorithm@itee.uq.edu.au
+<!--- For bug reports and suggestions, please email rdl.algorithm@itee.uq.edu.au --->
 
 For the latest news, please visit
 [the TAPIR website](http://rdl.cecs.anu.edu.au/home/projects/tapir).
